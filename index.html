@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Scorer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        .btn {
+            @apply px-4 py-2 rounded-md font-semibold text-white transition-colors duration-200;
+        }
+        .btn-primary {
+            @apply bg-blue-600 hover:bg-blue-700;
+        }
+        .btn-secondary {
+            @apply bg-gray-600 hover:bg-gray-700;
+        }
+        .btn-danger {
+            @apply bg-red-600 hover:bg-red-700;
+        }
+        .tab {
+            @apply px-4 py-2 cursor-pointer border-b-2 border-transparent;
+        }
+        .tab.active {
+            @apply border-blue-500 text-blue-400;
+        }
+        .input-field {
+             @apply bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white w-full;
+        }
+        .card {
+            @apply bg-gray-800 p-6 rounded-lg shadow-lg;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="setup-page" class="page active max-w-md mx-auto">
+        <div class="card">
+            <h1 class="text-3xl font-bold mb-6 text-center text-white">Cricket Match Setup</h1>
+            <div class="space-y-4">
+                <div>
+                    <label for="team1-name" class="block mb-2 text-sm font-medium text-gray-400">Team 1 Name</label>
+                    <input type="text" id="team1-name" class="input-field" value="Team A">
+                </div>
+                <div>
+                    <label for="team2-name" class="block mb-2 text-sm font-medium text-gray-400">Team 2 Name</label>
+                    <input type="text" id="team2-name" class="input-field" value="Team B">
+                </div>
+                 <div>
+                    <label for="team3-name" class="block mb-2 text-sm font-medium text-gray-400">Team 3 Name</label>
+                    <input type="text" id="team3-name" class="input-field" value="Team C">
+                </div>
+            </div>
+            <button id="start-match-btn" class="btn btn-primary w-full mt-6">Start Tournament</button>
+            <p id="setup-error" class="text-red-500 text-sm mt-2 text-center hidden"></p>
+        </div>
+    </div>
+
+    <div id="main-app" class="page">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-3xl font-bold text-white">Cricket Scorer</h1>
+                <button id="reset-tournament-btn" class="btn btn-danger">Reset Tournament</button>
+            </div>
+
+            <div class="flex border-b border-gray-700 mb-6">
+                <div class="tab active" onclick="showPage('current-match-page')">Current Match</div>
+                <div class="tab" onclick="showPage('recent-matches-page')">Recent Matches</div>
+                <div class="tab" onclick="showPage('points-table-page')">Points Table</div>
+            </div>
+
+            <div id="current-match-page" class="page active">
+                 <div id="toss-section" class="card mb-6">
+                    <h2 class="text-xl font-semibold mb-4 text-center">Toss Time!</h2>
+                    <p class="text-center mb-4">Who won the toss between <span id="toss-teams"></span>?</p>
+                    <div class="flex justify-center space-x-4">
+                        <button id="toss-winner-team1" class="btn btn-primary"></button>
+                        <button id="toss-winner-team2" class="btn btn-primary"></button>
+                    </div>
+                </div>
+
+                <div id="choice-section" class="card mb-6 hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-center"><span id="toss-winner-name"></span> won the toss and chose to...</h2>
+                    <div class="flex justify-center space-x-4">
+                        <button id="choice-bat" class="btn btn-secondary">Bat</button>
+                        <button id="choice-bowl" class="btn btn-secondary">Bowl</button>
+                    </div>
+                </div>
+
+
+                <div id="scoring-section" class="hidden">
+                     <p id="target-display" class="text-center text-lg mb-4 font-semibold text-yellow-400 hidden"></p>
+                     <div class="card mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <p class="text-lg">Batting: <span id="batting-team-name" class="font-bold"></span></p>
+                                <p class="text-lg">Bowling: <span id="bowling-team-name" class="font-bold"></span></p>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold"><span id="current-score">0</span>/<span id="current-wickets">0</span></p>
+                                <p class="text-sm">Overs: <span id="current-overs">0.0</span>/2</p>
+                            </div>
+                        </div>
+                         <div id="score-buttons" class="grid grid-cols-4 gap-2 mb-4">
+                            <button class="btn btn-primary" onclick="addRuns(0)">0</button>
+                            <button class="btn btn-primary" onclick="addRuns(1)">1</button>
+                            <button class="btn btn-primary" onclick="addRuns(2)">2</button>
+                            <button class="btn btn-primary" onclick="addRuns(3)">3</button>
+                            <button class="btn btn-primary" onclick="addRuns(4)">4</button>
+                            <button class="btn btn-primary" onclick="addRuns(6)">6</button>
+                            <button class="btn btn-secondary" onclick="addRuns('Wd')">Wd</button>
+                            <button class="btn btn-secondary" onclick="addRuns('Nb')">Nb</button>
+                            <button class="btn btn-danger" onclick="addRuns('W')">Wicket</button>
+                        </div>
+                        <div class="text-center text-gray-400">Innings <span id="innings-number">1</span></div>
+                    </div>
+                     <div class="card">
+                         <h3 class="text-lg font-semibold mb-2">This Over</h3>
+                         <div id="this-over" class="flex space-x-2"></div>
+                     </div>
+                </div>
+
+                 <div id="match-result-section" class="card hidden">
+                    <h2 class="text-2xl font-bold text-center mb-4">Match Result</h2>
+                    <p id="match-winner-text" class="text-xl text-center text-green-400"></p>
+                    <button id="next-match-btn" class="btn btn-primary w-full mt-6">Next Match</button>
+                </div>
+            </div>
+
+            <div id="recent-matches-page" class="page">
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4">Recent Matches</h2>
+                    <div id="recent-matches-list" class="space-y-4">
+                        <!-- Recent matches will be dynamically inserted here -->
+                    </div>
+                </div>
+            </div>
+
+            <div id="points-table-page" class="page">
+                <div class="card">
+                    <h2 class="text-2xl font-bold mb-4">Points Table</h2>
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="border-b border-gray-700">
+                                <th class="py-2">Team</th>
+                                <th class="py-2">Matches</th>
+                                <th class="py-2">Won</th>
+                                <th class="py-2">Lost</th>
+                                <th class="py-2">Points</th>
+                                <th class="py-2">NRR</th>
+                            </tr>
+                        </thead>
+                        <tbody id="points-table-body">
+                            <!-- Points table rows will be dynamically inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const setupPage = document.getElementById('setup-page');
+        const mainApp = document.getElementById('main-app');
+        const startMatchBtn = document.getElementById('start-match-btn');
+        const team1NameInput = document.getElementById('team1-name');
+        const team2NameInput = document.getElementById('team2-name');
+        const team3NameInput = document.getElementById('team3-name');
+        const setupError = document.getElementById('setup-error');
+        
+        const pages = document.querySelectorAll('#main-app .page');
+        const tabs = document.querySelectorAll('.tab');
+
+        const tossSection = document.getElementById('toss-section');
+        const choiceSection = document.getElementById('choice-section');
+        const scoringSection = document.getElementById('scoring-section');
+        const matchResultSection = document.getElementById('match-result-section');
+
+        const tossTeams = document.getElementById('toss-teams');
+        const tossWinnerTeam1Btn = document.getElementById('toss-winner-team1');
+        const tossWinnerTeam2Btn = document.getElementById('toss-winner-team2');
+        const tossWinnerName = document.getElementById('toss-winner-name');
+        const choiceBatBtn = document.getElementById('choice-bat');
+        const choiceBowlBtn = document.getElementById('choice-bowl');
+
+        const battingTeamName = document.getElementById('batting-team-name');
+        const bowlingTeamName = document.getElementById('bowling-team-name');
+        const currentScore = document.getElementById('current-score');
+        const currentWickets = document.getElementById('current-wickets');
+        const currentOvers = document.getElementById('current-overs');
+        const inningsNumber = document.getElementById('innings-number');
+        const thisOver = document.getElementById('this-over');
+        const targetDisplay = document.getElementById('target-display');
+
+        const matchWinnerText = document.getElementById('match-winner-text');
+        const nextMatchBtn = document.getElementById('next-match-btn');
+        const resetTournamentBtn = document.getElementById('reset-tournament-btn');
+
+        const recentMatchesList = document.getElementById('recent-matches-list');
+        const pointsTableBody = document.getElementById('points-table-body');
+
+        // --- Game State ---
+        let teams = [];
+        let schedule = [];
+        let currentMatchIndex = 0;
+        let match;
+        let recentMatches = [];
+
+        // --- Initialization ---
+        startMatchBtn.addEventListener('click', () => {
+            const team1 = team1NameInput.value.trim();
+            const team2 = team2NameInput.value.trim();
+            const team3 = team3NameInput.value.trim();
+
+            if (team1 && team2 && team3) {
+                setupError.classList.add('hidden');
+                teams = [
+                    { name: team1, matches: 0, won: 0, lost: 0, points: 0, runsScored: 0, ballsFaced: 0, runsConceded: 0, ballsBowled: 0, nrr: 0 },
+                    { name: team2, matches: 0, won: 0, lost: 0, points: 0, runsScored: 0, ballsFaced: 0, runsConceded: 0, ballsBowled: 0, nrr: 0 },
+                    { name: team3, matches: 0, won: 0, lost: 0, points: 0, runsScored: 0, ballsFaced: 0, runsConceded: 0, ballsBowled: 0, nrr: 0 }
+                ];
+                generateSchedule();
+                setupPage.classList.remove('active');
+                mainApp.classList.add('active');
+                startNextMatch();
+            } else {
+                setupError.textContent = 'Please enter names for all three teams.';
+                setupError.classList.remove('hidden');
+            }
+        });
+
+        resetTournamentBtn.addEventListener('click', () => {
+            // Directly reloads the page, bypassing the problematic confirm() dialog.
+            location.reload();
+        });
+
+        function generateSchedule() {
+            schedule = [
+                { team1: 0, team2: 1 }, { team1: 0, team2: 2 }, { team1: 1, team2: 2 },
+                { team1: 1, team2: 0 }, { team1: 2, team2: 0 }, { team1: 2, team2: 1 },
+            ];
+        }
+
+        // --- Page Navigation ---
+        function showPage(pageId) {
+            pages.forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+
+            tabs.forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.getAttribute('onclick').includes(pageId)) {
+                    tab.classList.add('active');
+                }
+            });
+        }
+
+        // --- Match Flow ---
+        function startNextMatch() {
+            if (currentMatchIndex >= schedule.length) {
+                showPage('points-table-page');
+                matchResultSection.classList.remove('hidden');
+                scoringSection.classList.add('hidden');
+                tossSection.style.display = 'none';
+                matchWinnerText.textContent = "Tournament Finished!";
+                nextMatchBtn.classList.add('hidden');
+                return;
+            }
+
+            const matchInfo = schedule[currentMatchIndex];
+            match = {
+                team1: teams[matchInfo.team1],
+                team2: teams[matchInfo.team2],
+                innings1: { score: 0, wickets: 0, overs: 0, balls: 0, overHistory: [] },
+                innings2: { score: 0, wickets: 0, overs: 0, balls: 0, overHistory: [] },
+                battingTeam: null, bowlingTeam: null, innings: 1, target: 0, winner: null
+            };
+
+            resetUIForNewMatch();
+            setupToss();
+        }
+
+        function resetUIForNewMatch() {
+            tossSection.style.display = 'block';
+            choiceSection.classList.add('hidden');
+            scoringSection.classList.add('hidden');
+            matchResultSection.classList.add('hidden');
+            targetDisplay.classList.add('hidden');
+            nextMatchBtn.classList.remove('hidden');
+            showPage('current-match-page');
+        }
+
+        function setupToss() {
+            tossTeams.textContent = `${match.team1.name} vs ${match.team2.name}`;
+            tossWinnerTeam1Btn.textContent = match.team1.name;
+            tossWinnerTeam2Btn.textContent = match.team2.name;
+            tossWinnerTeam1Btn.onclick = () => handleToss(match.team1);
+            tossWinnerTeam2Btn.onclick = () => handleToss(match.team2);
+        }
+
+        function handleToss(winner) {
+            match.tossWinner = winner;
+            tossSection.style.display = 'none';
+            choiceSection.classList.remove('hidden');
+            tossWinnerName.textContent = winner.name;
+        }
+
+        choiceBatBtn.addEventListener('click', () => startInnings(match.tossWinner, match.tossWinner === match.team1 ? match.team2 : match.team1));
+        choiceBowlBtn.addEventListener('click', () => startInnings(match.tossWinner === match.team1 ? match.team2 : match.team1, match.tossWinner));
+
+        function startInnings(batting, bowling) {
+            match.battingTeam = batting;
+            match.bowlingTeam = bowling;
+            choiceSection.classList.add('hidden');
+            scoringSection.classList.remove('hidden');
+            updateScorecard();
+        }
+
+        // --- Scoring Logic ---
+        function addRuns(run) {
+            const currentInnings = match.innings === 1 ? match.innings1 : match.innings2;
+            if (run === 'W') {
+                currentInnings.wickets++;
+                currentInnings.balls++;
+            } else if (run === 'Wd' || run === 'Nb') {
+                currentInnings.score++;
+            } else {
+                currentInnings.score += run;
+                currentInnings.balls++;
+            }
+            currentInnings.overHistory.push(run);
+            if (currentInnings.balls === 6) {
+                currentInnings.balls = 0;
+                currentInnings.overs++;
+                currentInnings.overHistory = [];
+            }
+            updateScorecard();
+            checkInningsEnd();
+        }
+
+        function checkInningsEnd() {
+            const currentInnings = match.innings === 1 ? match.innings1 : match.innings2;
+            let inningsOver = (currentInnings.wickets >= 1 || currentInnings.overs >= 2);
+
+            if (match.innings === 1 && inningsOver) {
+                switchInnings();
+            } else if (match.innings === 2 && (currentInnings.score >= match.target || inningsOver)) {
+                endMatch();
+            }
+        }
+
+        function switchInnings() {
+            match.innings = 2;
+            match.target = match.innings1.score + 1;
+            [match.battingTeam, match.bowlingTeam] = [match.bowlingTeam, match.battingTeam];
+            
+            targetDisplay.textContent = `${match.battingTeam.name} needs ${match.target} to win.`;
+            targetDisplay.classList.remove('hidden');
+            
+            updateScorecard();
+        }
+
+        function endMatch() {
+            const score1 = match.innings1.score;
+            const score2 = match.innings2.score;
+            let winner = null, loser = null, resultText;
+
+            if (score2 >= match.target) {
+                winner = match.battingTeam; // Team chasing won
+                loser = match.bowlingTeam;
+            } else if (score1 > score2) {
+                winner = match.bowlingTeam; // Team defending won
+                loser = match.battingTeam;
+            }
+
+            if (winner) {
+                resultText = `${winner.name} won the match!`;
+                winner.won++;
+                winner.points += 2;
+                loser.lost++;
+            } else {
+                resultText = "The match is a tie!";
+                match.team1.points++;
+                match.team2.points++;
+            }
+
+            match.winner = winner;
+            match.team1.matches++;
+            match.team2.matches++;
+            
+            updateTeamStats(match.team1, match.team1 === match.battingTeam ? match.innings2 : match.innings1, match.team1 === match.bowlingTeam ? match.innings2 : match.innings1);
+            updateTeamStats(match.team2, match.team2 === match.battingTeam ? match.innings2 : match.innings1, match.team2 === match.bowlingTeam ? match.innings2 : match.innings1);
+            
+            calculateNRR();
+            
+            recentMatches.push({ teams: `${match.team1.name} vs ${match.team2.name}`, result: resultText });
+            
+            scoringSection.classList.add('hidden');
+            matchResultSection.classList.remove('hidden');
+            matchWinnerText.textContent = resultText;
+            
+            updateRecentMatches();
+            updatePointsTable();
+        }
+
+        function updateTeamStats(team, battingInnings, bowlingInnings) {
+            team.runsScored += battingInnings.score;
+            team.ballsFaced += battingInnings.overs * 6 + battingInnings.balls;
+            team.runsConceded += bowlingInnings.score;
+            team.ballsBowled += bowlingInnings.overs * 6 + bowlingInnings.balls;
+        }
+
+        function calculateNRR() {
+            teams.forEach(team => {
+                const scoringRate = team.ballsFaced > 0 ? (team.runsScored / team.ballsFaced) * 6 : 0;
+                const concedingRate = team.ballsBowled > 0 ? (team.runsConceded / team.ballsBowled) * 6 : 0;
+                team.nrr = scoringRate - concedingRate;
+            });
+        }
+
+        nextMatchBtn.addEventListener('click', () => {
+            currentMatchIndex++;
+            startNextMatch();
+        });
+
+        // --- UI Updates ---
+        function updateScorecard() {
+            const currentInningsData = match.innings === 1 ? match.innings1 : match.innings2;
+            battingTeamName.textContent = match.battingTeam.name;
+            bowlingTeamName.textContent = match.bowlingTeam.name;
+            currentScore.textContent = currentInningsData.score;
+            currentWickets.textContent = currentInningsData.wickets;
+            currentOvers.textContent = `${currentInningsData.overs}.${currentInningsData.balls}`;
+            inningsNumber.textContent = match.innings;
+            thisOver.innerHTML = currentInningsData.overHistory.map(run => 
+                `<span class="w-8 h-8 flex items-center justify-center rounded-full ${run === 'W' ? 'bg-red-500' : 'bg-gray-600'}">${run}</span>`
+            ).join('');
+        }
+
+        function updateRecentMatches() {
+            recentMatchesList.innerHTML = recentMatches.slice().reverse().map(m => `
+                <div class="bg-gray-700 p-3 rounded-md">
+                    <p class="font-semibold">${m.teams}</p>
+                    <p class="text-green-400">${m.result}</p>
+                </div>
+            `).join('');
+        }
+
+        function updatePointsTable() {
+            const sortedTeams = [...teams].sort((a, b) => b.points - a.points || b.nrr - a.nrr);
+            pointsTableBody.innerHTML = sortedTeams.map(team => `
+                <tr class="border-b border-gray-800">
+                    <td class="py-2">${team.name}</td>
+                    <td class="py-2">${team.matches}</td>
+                    <td class="py-2">${team.won}</td>
+                    <td class="py-2">${team.lost}</td>
+                    <td class="py-2">${team.points}</td>
+                    <td class="py-2">${team.nrr.toFixed(2)}</td>
+                </tr>
+            `).join('');
+        }
+    </script>
+</body>
+</html>
