@@ -112,18 +112,18 @@
             <div class="space-y-4">
                 <div>
                     <label for="team1-name" class="block mb-2 text-sm font-medium text-gray-400">Team 1 Name</label>
-                    <input type="text" id="team1-name" class="input-field" placeholder="Team A">
+                    <input type="text" id="team1-name" class="input-field" value="Team A">
                 </div>
                 <div>
                     <label for="team2-name" class="block mb-2 text-sm font-medium text-gray-400">Team 2 Name</label>
-                    <input type="text" id="team2-name" class="input-field" placeholder="Team B">
+                    <input type="text" id="team2-name" class="input-field" value="Team B">
                 </div>
                  <div>
                     <label for="team3-name" class="block mb-2 text-sm font-medium text-gray-400">Team 3 Name</label>
-                    <input type="text" id="team3-name" class="input-field" placeholder="Team C">
+                    <input type="text" id="team3-name" class="input-field" value="Team C">
                 </div>
             </div>
-            <button id="start-match-btn" class="btn btn-primary w-full mt-6 border p-2 border-blue-400">Start Tournament</button>
+            <button id="start-match-btn" class="btn btn-primary w-full mt-6">Start Tournament</button>
             <p id="setup-error" class="text-red-500 text-sm mt-2 text-center hidden"></p>
         </div>
     </div>
@@ -177,15 +177,15 @@
                               </div>
                           </div>
                            <div id="score-buttons" class="grid grid-cols-4 gap-2 mb-4">
-                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(0)">0</button>
-                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(1)">1</button>
-                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(2)">2</button>
-                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(3)">3</button>
-                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(4)">4</button>
-                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(6)">6</button>
-                               <button class="btn btn-secondary border border-gray-500" onclick="addRuns('Wd')">Wd</button>
-                               <button class="btn btn-secondary border border-gray-500" onclick="addRuns('Nb')">Nb</button>
-                               <button class="btn btn-danger border border-red-400" onclick="addRuns('W')">Wicket</button>
+                               <button class="btn p-2 btn-primary border border-blue-400" onclick="addRuns(0)">0</button>
+                               <button class="btn p-2 btn-primary border border-blue-400" onclick="addRuns(1)">1</button>
+                               <button class="btn p-2 btn-primary border border-blue-400" onclick="addRuns(2)">2</button>
+                               <button class="btn p-2 btn-primary border border-blue-400" onclick="addRuns(3)">3</button>
+                               <button class="btn p-2 btn-primary border border-blue-400" onclick="addRuns(4)">4</button>
+                               <button class="btn p-2 btn-primary border border-blue-400" onclick="addRuns(6)">6</button>
+                               <button class="btn p-2 btn-secondary border border-gray-500" onclick="addRuns('Wd')">Wd</button>
+                               <button class="btn p-2 btn-secondary border border-gray-500" onclick="addRuns('Nb')">Nb</button>
+                               <button class="btn p-2 btn-danger border border-red-400" onclick="addRuns('W')">Wicket</button>
                            </div>
                           <div class="text-center text-gray-400">Innings <span id="innings-number">1</span></div>
                       </div>
@@ -204,7 +204,7 @@
 
             <div id="recent-matches-page" class="page">
                 <div class="card">
-                    <h2 class="text-2xl font-bold mb-4 cursor-pointer">Recent Matches</h2>
+                    <h2 class="text-2xl font-bold mb-4">Recent Matches</h2>
                     <div id="recent-matches-list" class="space-y-4">
                         <!-- Recent matches will be dynamically inserted here -->
                     </div>
@@ -213,7 +213,7 @@
 
             <div id="points-table-page" class="page">
                 <div class="card">
-                    <h2 class="text-2xl font-bold mb-4 cursor-pointer">Points Table</h2>
+                    <h2 class="text-2xl font-bold mb-4">Points Table</h2>
                     <table class="w-full text-left">
                         <thead>
                             <tr class="border-b border-gray-700">
@@ -284,7 +284,8 @@
         let currentMatchIndex = 0;
         let match;
         let recentMatches = [];
-        let actualTossResult = null; // Variable to hold the true result of the toss
+        let actualTossResult = null;
+        let tossIsResolved = false;
 
         // --- Speech Recognition Setup ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -301,10 +302,9 @@
 
         // --- Initialization ---
         startMatchBtn.addEventListener('click', () => {
-            
-            const team1 = team1NameInput.value?.trim() || "Team A";
-            const team2 = team2NameInput.value?.trim() || "Team B";
-            const team3 = team3NameInput.value?.trim() || "Team C";
+            const team1 = team1NameInput.value.trim();
+            const team2 = team2NameInput.value.trim();
+            const team3 = team3NameInput.value.trim();
 
             if (team1 && team2 && team3) {
                 setupError.classList.add('hidden');
@@ -384,7 +384,6 @@
             tossStatus.classList.add('hidden');
             tossResultText.classList.add('hidden');
             
-            // Reset coin position instantly without animation
             coin.style.transition = 'none';
             coin.style.transform = 'rotateY(0)';
         }
@@ -397,44 +396,48 @@
                 tossCoinBtn.disabled = true;
             }
         }
-
-        // --- NEW TOSS LOGIC ---
-        tossCoinBtn.addEventListener('click', () => {
+        
+        // --- NEW: Encapsulated Toss Function ---
+        function performToss() {
             if (!recognition) return;
-
-            // 1. Disable button and update status
+            
+            tossIsResolved = false;
             tossCoinBtn.disabled = true;
             tossStatus.textContent = "Flipping... Say 'Heads' or 'Tails'!";
             tossStatus.classList.remove('hidden');
             tossResultText.classList.add('hidden');
             
-            // 2. Determine the actual result *before* the animation
-            actualTossResult = (Math.random() < 0.5) ? 'Heads' : 'Tails';
+            // Reset coin to starting position before generating new result and flipping
+            coin.style.transition = 'none';
+            coin.style.transform = 'rotateY(0)';
 
-            // 3. Calculate final rotation (5 full spins + a half spin for tails)
+            // Generate a NEW random result each time this function is called
+            actualTossResult = (Math.random() < 0.5) ? 'Heads' : 'Tails';
             const finalRotation = 1800 + (actualTossResult === 'Tails' ? 180 : 0);
 
-            // 4. Start listening and start the animation
-            // Use a tiny timeout to ensure the transform reset is applied before the transition starts
+            // Use a timeout to ensure the transform reset is applied before the transition starts
             setTimeout(() => {
                 coin.style.transition = 'transform 3s ease-out';
                 coin.style.transform = `rotateY(${finalRotation}deg)`;
                 recognition.start();
             }, 50);
 
-            // 5. Stop listening just before the coin lands
+            // Stop listening just before the coin lands
             setTimeout(() => {
-                // Check if recognition is still running before trying to stop
                 try {
                     recognition.stop();
                 } catch(e) {
                     console.warn("Recognition could not be stopped, may have already finished.", e);
                 }
-            }, 2800); // Stop just before the 3s animation ends
-        });
+            }, 2800);
+        }
+
+        // --- UPDATED: Event listener now calls the encapsulated function ---
+        tossCoinBtn.addEventListener('click', performToss);
 
         if(recognition) {
             recognition.onresult = (event) => {
+                tossIsResolved = true;
                 const spokenText = event.results[0][0].transcript.toLowerCase();
                 let userChoice = null;
 
@@ -447,38 +450,41 @@
                 tossStatus.textContent = `You called: "${userChoice || '...'}"`;
 
                 if (userChoice) {
-                    // Compare user's choice with the pre-determined result
                     const winner = (userChoice === actualTossResult) ? match.team1 : match.team2;
-                    
                     tossResultText.textContent = `It's ${actualTossResult}! ${winner.name} wins the toss.`;
                     tossResultText.classList.remove('hidden');
-
-                    // Proceed to the next step after a delay for the user to read the result
                     setTimeout(() => handleToss(winner), 2500);
                 } else {
-                    // Handle case where the call was not understood
-                    tossResultText.textContent = "Couldn't understand. The result was " + actualTossResult + ". Please toss again.";
-                    tossResultText.classList.remove('hidden');
-                    tossCoinBtn.disabled = false; // Allow user to try again
+                    // --- UPDATED: Cleaner retry message ---
+                    tossStatus.textContent = "Couldn't understand your call. Please toss again.";
+                    tossResultText.classList.add('hidden');
+                    tossCoinBtn.disabled = false;
                 }
             };
 
             recognition.onerror = (event) => {
+                tossIsResolved = true;
                 console.error("Speech recognition error", event.error);
-                let errorMsg = "An error occurred. Please try again.";
+                let errorMsg = "An error occurred. Please toss again.";
                 if (event.error === 'no-speech' || event.error === 'audio-capture') {
-                    // The coin has already landed, so we can tell them the result
-                    errorMsg = `Didn't hear anything. The result was ${actualTossResult}. Please toss again.`;
+                     // --- UPDATED: Cleaner retry message ---
+                    errorMsg = "Didn't hear anything. Please toss again.";
                 } else if (event.error === 'not-allowed') {
                     errorMsg = "Microphone access denied. Please allow and toss again.";
                 }
                 
                 tossStatus.textContent = errorMsg;
-                tossCoinBtn.disabled = false; // Re-enable button to allow retrying
+                tossCoinBtn.disabled = false;
+            };
+
+            recognition.onend = () => {
+                if (!tossIsResolved) {
+                    // --- UPDATED: Cleaner retry message ---
+                    tossStatus.textContent = "Didn't catch that. Please toss again.";
+                    tossCoinBtn.disabled = false;
+                }
             };
         }
-        
-        // The old processTossResult function is no longer needed.
 
         function handleToss(winner) {
             match.tossWinner = winner;
@@ -522,7 +528,7 @@
 
         function checkInningsEnd() {
             const currentInnings = match.innings === 1 ? match.innings1 : match.innings2;
-            let inningsOver = (currentInnings.wickets >= 10 || currentInnings.overs >= 2); // Assuming 10 wickets max
+            let inningsOver = (currentInnings.wickets >= 1 || currentInnings.overs >= 2); 
 
             if (match.innings === 1 && inningsOver) {
                 switchInnings();
@@ -550,8 +556,8 @@
             if (score2 >= match.target) {
                 winner = match.battingTeam;
                 loser = match.bowlingTeam;
-                const wicketsLeft = 10 - match.innings2.wickets;
-                resultText = `${winner.name} won by ${wicketsLeft} wicket${wicketsLeft !== 1 ? 's' : ''}.`;
+                const wicketsLeft = 1 - match.innings2.wickets;
+                resultText = `${winner.name} won by ${wicketsLeft} wicket.`;
             } 
             else if (score1 > score2) {
                 winner = match.bowlingTeam;
