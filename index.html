@@ -19,7 +19,10 @@
             display: block;
         }
         .btn {
-            @apply px-4 py-2 rounded-md font-semibold text-white transition-colors duration-200;
+            @apply px-4 py-2 rounded-md font-semibold text-white transition-all duration-200;
+        }
+        .btn:disabled {
+            @apply bg-gray-500 cursor-not-allowed;
         }
         .btn-primary {
             @apply bg-blue-600 hover:bg-blue-700;
@@ -30,17 +33,74 @@
         .btn-danger {
             @apply bg-red-600 hover:bg-red-700;
         }
-        .tab {
-            @apply px-4 py-2 cursor-pointer border-b-2 border-transparent;
-        }
-        .tab.active {
-            @apply border-blue-500 text-blue-400;
-        }
         .input-field {
              @apply bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white w-full;
         }
         .card {
             @apply bg-gray-800 p-6 rounded-lg shadow-lg;
+        }
+
+        /* --- Tab Styles --- */
+        .tab {
+            @apply px-2 py-2 cursor-pointer text-gray-400 transition-colors duration-300 relative;
+        }
+        .tab:hover {
+            @apply text-white;
+        }
+        .tab.active {
+            @apply text-blue-400 font-semibold;
+        }
+        .tab::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background-color: #3b82f6;
+            transform: scaleX(0);
+            transition: transform 0.3s ease-in-out;
+        }
+        .tab.active::after {
+            transform: scaleX(1);
+        }
+
+        /* --- Coin Toss Animation Styles --- */
+        .coin-container {
+            perspective: 1000px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 1.5rem 0;
+            height: 100px;
+        }
+        #coin {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            transform-style: preserve-3d;
+            /* The transition is now set dynamically via JS */
+        }
+        #coin .face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            font-weight: bold;
+        }
+        .heads {
+            background: linear-gradient(45deg, #ffd700, #f0c000);
+            color: #4a3300;
+        }
+        .tails {
+            background: linear-gradient(45deg, #c0c0c0, #a9a9a9);
+            transform: rotateY(180deg);
+            color: #333;
         }
     </style>
 </head>
@@ -52,18 +112,18 @@
             <div class="space-y-4">
                 <div>
                     <label for="team1-name" class="block mb-2 text-sm font-medium text-gray-400">Team 1 Name</label>
-                    <input type="text" id="team1-name" class="input-field" value="Team A">
+                    <input type="text" id="team1-name" class="input-field" placeholder="Team A">
                 </div>
                 <div>
                     <label for="team2-name" class="block mb-2 text-sm font-medium text-gray-400">Team 2 Name</label>
-                    <input type="text" id="team2-name" class="input-field" value="Team B">
+                    <input type="text" id="team2-name" class="input-field" placeholder="Team B">
                 </div>
                  <div>
                     <label for="team3-name" class="block mb-2 text-sm font-medium text-gray-400">Team 3 Name</label>
-                    <input type="text" id="team3-name" class="input-field" value="Team C">
+                    <input type="text" id="team3-name" class="input-field" placeholder="Team C">
                 </div>
             </div>
-            <button id="start-match-btn" class="btn btn-primary w-full mt-6">Start Tournament</button>
+            <button id="start-match-btn" class="btn btn-primary w-full mt-6 border p-2 border-blue-400">Start Tournament</button>
             <p id="setup-error" class="text-red-500 text-sm mt-2 text-center hidden"></p>
         </div>
     </div>
@@ -72,76 +132,79 @@
         <div class="max-w-4xl mx-auto">
             <div class="flex justify-between items-center mb-6">
                 <h1 class="text-3xl font-bold text-white">Cricket Scorer</h1>
-                <button id="reset-tournament-btn" class="btn btn-danger">Reset Tournament</button>
+                <button id="reset-tournament-btn" class="btn btn-danger border border-red-400 shadow-md hover:shadow-lg">Reset Tournament</button>
             </div>
 
-            <div class="flex border-b border-gray-700 mb-6">
-                <div class="tab active" onclick="showPage('current-match-page')">Current Match</div>
-                <div class="tab" onclick="showPage('recent-matches-page')">Recent Matches</div>
-                <div class="tab" onclick="showPage('points-table-page')">Points Table</div>
+            <div class="flex border-b border-gray-700 mb-6 gap-x-8 justify-center">
+                <div class="tab active cursor-pointer" onclick="showPage('current-match-page')">Current Match</div>
+                <div class="tab cursor-pointer" onclick="showPage('recent-matches-page')">Recent Matches</div>
+                <div class="tab cursor-pointer" onclick="showPage('points-table-page')">Points Table</div>
             </div>
 
             <div id="current-match-page" class="page active">
                  <div id="toss-section" class="card mb-6">
-                    <h2 class="text-xl font-semibold mb-4 text-center">Toss Time!</h2>
-                    <p class="text-center mb-4">Who won the toss between <span id="toss-teams"></span>?</p>
-                    <div class="flex justify-center space-x-4">
-                        <button id="toss-winner-team1" class="btn btn-primary"></button>
-                        <button id="toss-winner-team2" class="btn btn-primary"></button>
-                    </div>
-                </div>
-
-                <div id="choice-section" class="card mb-6 hidden">
-                    <h2 class="text-xl font-semibold mb-4 text-center"><span id="toss-winner-name"></span> won the toss and chose to...</h2>
-                    <div class="flex justify-center space-x-4">
-                        <button id="choice-bat" class="btn btn-secondary">Bat</button>
-                        <button id="choice-bowl" class="btn btn-secondary">Bowl</button>
-                    </div>
-                </div>
-
-
-                <div id="scoring-section" class="hidden">
-                     <p id="target-display" class="text-center text-lg mb-4 font-semibold text-yellow-400 hidden"></p>
-                     <div class="card mb-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <div>
-                                <p class="text-lg">Batting: <span id="batting-team-name" class="font-bold"></span></p>
-                                <p class="text-lg">Bowling: <span id="bowling-team-name" class="font-bold"></span></p>
-                            </div>
-                            <div>
-                                <p class="text-2xl font-bold"><span id="current-score">0</span>/<span id="current-wickets">0</span></p>
-                                <p class="text-sm">Overs: <span id="current-overs">0.0</span>/2</p>
-                            </div>
-                        </div>
-                         <div id="score-buttons" class="grid grid-cols-4 gap-2 mb-4">
-                            <button class="btn btn-primary" onclick="addRuns(0)">0</button>
-                            <button class="btn btn-primary" onclick="addRuns(1)">1</button>
-                            <button class="btn btn-primary" onclick="addRuns(2)">2</button>
-                            <button class="btn btn-primary" onclick="addRuns(3)">3</button>
-                            <button class="btn btn-primary" onclick="addRuns(4)">4</button>
-                            <button class="btn btn-primary" onclick="addRuns(6)">6</button>
-                            <button class="btn btn-secondary" onclick="addRuns('Wd')">Wd</button>
-                            <button class="btn btn-secondary" onclick="addRuns('Nb')">Nb</button>
-                            <button class="btn btn-danger" onclick="addRuns('W')">Wicket</button>
-                        </div>
-                        <div class="text-center text-gray-400">Innings <span id="innings-number">1</span></div>
-                    </div>
-                     <div class="card">
-                         <h3 class="text-lg font-semibold mb-2">This Over</h3>
-                         <div id="this-over" class="flex space-x-2"></div>
+                     <h2 class="text-xl font-semibold mb-2 text-center">Toss Time!</h2>
+                     <p class="text-center mb-4"><span id="toss-caller-name"></span>, click the button and say "Heads" or "Tails".</p>
+                     
+                     <div class="coin-container">
+                         <div id="coin"><div class="face heads">H</div><div class="face tails">T</div></div>
                      </div>
-                </div>
+                     <button id="toss-coin-btn" class="btn btn-primary w-full border border-blue-400">Toss Coin & Speak</button>
+                     <p id="toss-status" class="text-center mt-4 text-lg font-semibold text-yellow-400 hidden"></p>
+                     <p id="toss-result-text" class="text-center mt-2 text-lg font-semibold hidden"></p>
+                 </div>
 
-                 <div id="match-result-section" class="card hidden">
-                    <h2 class="text-2xl font-bold text-center mb-4">Match Result</h2>
-                    <p id="match-winner-text" class="text-xl text-center text-green-400"></p>
-                    <button id="next-match-btn" class="btn btn-primary w-full mt-6">Next Match</button>
-                </div>
+                 <div id="choice-section" class="card mb-6 hidden">
+                     <h2 class="text-xl font-semibold mb-4 text-center"><span id="toss-winner-name"></span> won the toss and chose to...</h2>
+                     <div class="flex justify-center space-x-4">
+                         <button id="choice-bat" class="btn btn-secondary p-2 border border-blue-400">Bat</button>
+                         <button id="choice-bowl" class="btn btn-secondary p-2 border border-blue-400">Bowl</button>
+                     </div>
+                 </div>
+
+
+                 <div id="scoring-section" class="hidden">
+                      <p id="target-display" class="text-center text-lg mb-4 font-semibold text-yellow-400 hidden"></p>
+                      <div class="card mb-6">
+                          <div class="flex justify-between items-center mb-4">
+                              <div>
+                                  <p class="text-lg">Batting: <span id="batting-team-name" class="font-bold"></span></p>
+                                  <p class="text-lg">Bowling: <span id="bowling-team-name" class="font-bold"></span></p>
+                              </div>
+                              <div>
+                                  <p class="text-2xl font-bold"><span id="current-score">0</span>/<span id="current-wickets">0</span></p>
+                                  <p class="text-sm">Overs: <span id="current-overs">0.0</span>/2</p>
+                              </div>
+                          </div>
+                           <div id="score-buttons" class="grid grid-cols-4 gap-2 mb-4">
+                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(0)">0</button>
+                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(1)">1</button>
+                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(2)">2</button>
+                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(3)">3</button>
+                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(4)">4</button>
+                               <button class="btn btn-primary border border-blue-400" onclick="addRuns(6)">6</button>
+                               <button class="btn btn-secondary border border-gray-500" onclick="addRuns('Wd')">Wd</button>
+                               <button class="btn btn-secondary border border-gray-500" onclick="addRuns('Nb')">Nb</button>
+                               <button class="btn btn-danger border border-red-400" onclick="addRuns('W')">Wicket</button>
+                           </div>
+                          <div class="text-center text-gray-400">Innings <span id="innings-number">1</span></div>
+                      </div>
+                       <div class="card">
+                          <h3 class="text-lg font-semibold mb-2">This Over</h3>
+                          <div id="this-over" class="flex space-x-2"></div>
+                      </div>
+                 </div>
+
+                  <div id="match-result-section" class="card hidden">
+                     <h2 class="text-2xl font-bold text-center mb-4">Match Result</h2>
+                     <p id="match-winner-text" class="text-xl text-center text-green-400"></p>
+                     <button id="next-match-btn" class="btn btn-primary w-full mt-6">Next Match</button>
+                 </div>
             </div>
 
             <div id="recent-matches-page" class="page">
                 <div class="card">
-                    <h2 class="text-2xl font-bold mb-4">Recent Matches</h2>
+                    <h2 class="text-2xl font-bold mb-4 cursor-pointer">Recent Matches</h2>
                     <div id="recent-matches-list" class="space-y-4">
                         <!-- Recent matches will be dynamically inserted here -->
                     </div>
@@ -150,7 +213,7 @@
 
             <div id="points-table-page" class="page">
                 <div class="card">
-                    <h2 class="text-2xl font-bold mb-4">Points Table</h2>
+                    <h2 class="text-2xl font-bold mb-4 cursor-pointer">Points Table</h2>
                     <table class="w-full text-left">
                         <thead>
                             <tr class="border-b border-gray-700">
@@ -189,9 +252,12 @@
         const scoringSection = document.getElementById('scoring-section');
         const matchResultSection = document.getElementById('match-result-section');
 
-        const tossTeams = document.getElementById('toss-teams');
-        const tossWinnerTeam1Btn = document.getElementById('toss-winner-team1');
-        const tossWinnerTeam2Btn = document.getElementById('toss-winner-team2');
+        const tossCallerName = document.getElementById('toss-caller-name');
+        const coin = document.getElementById('coin');
+        const tossCoinBtn = document.getElementById('toss-coin-btn');
+        const tossStatus = document.getElementById('toss-status');
+        const tossResultText = document.getElementById('toss-result-text');
+
         const tossWinnerName = document.getElementById('toss-winner-name');
         const choiceBatBtn = document.getElementById('choice-bat');
         const choiceBowlBtn = document.getElementById('choice-bowl');
@@ -218,12 +284,27 @@
         let currentMatchIndex = 0;
         let match;
         let recentMatches = [];
+        let actualTossResult = null; // Variable to hold the true result of the toss
+
+        // --- Speech Recognition Setup ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+        } else {
+            console.log("Speech Recognition not supported in this browser.");
+        }
 
         // --- Initialization ---
         startMatchBtn.addEventListener('click', () => {
-            const team1 = team1NameInput.value.trim();
-            const team2 = team2NameInput.value.trim();
-            const team3 = team3NameInput.value.trim();
+            
+            const team1 = team1NameInput.value?.trim() || "Team A";
+            const team2 = team2NameInput.value?.trim() || "Team B";
+            const team3 = team3NameInput.value?.trim() || "Team C";
 
             if (team1 && team2 && team3) {
                 setupError.classList.add('hidden');
@@ -243,7 +324,6 @@
         });
 
         resetTournamentBtn.addEventListener('click', () => {
-            // Directly reloads the page, bypassing the problematic confirm() dialog.
             location.reload();
         });
 
@@ -299,16 +379,106 @@
             matchResultSection.classList.add('hidden');
             targetDisplay.classList.add('hidden');
             nextMatchBtn.classList.remove('hidden');
-            showPage('current-match-page');
+            
+            tossCoinBtn.disabled = false;
+            tossStatus.classList.add('hidden');
+            tossResultText.classList.add('hidden');
+            
+            // Reset coin position instantly without animation
+            coin.style.transition = 'none';
+            coin.style.transform = 'rotateY(0)';
         }
 
         function setupToss() {
-            tossTeams.textContent = `${match.team1.name} vs ${match.team2.name}`;
-            tossWinnerTeam1Btn.textContent = match.team1.name;
-            tossWinnerTeam2Btn.textContent = match.team2.name;
-            tossWinnerTeam1Btn.onclick = () => handleToss(match.team1);
-            tossWinnerTeam2Btn.onclick = () => handleToss(match.team2);
+            tossCallerName.textContent = match.team1.name;
+            if (!SpeechRecognition) {
+                tossStatus.textContent = "Sorry, voice recognition is not supported in your browser.";
+                tossStatus.classList.remove('hidden');
+                tossCoinBtn.disabled = true;
+            }
         }
+
+        // --- NEW TOSS LOGIC ---
+        tossCoinBtn.addEventListener('click', () => {
+            if (!recognition) return;
+
+            // 1. Disable button and update status
+            tossCoinBtn.disabled = true;
+            tossStatus.textContent = "Flipping... Say 'Heads' or 'Tails'!";
+            tossStatus.classList.remove('hidden');
+            tossResultText.classList.add('hidden');
+            
+            // 2. Determine the actual result *before* the animation
+            actualTossResult = (Math.random() < 0.5) ? 'Heads' : 'Tails';
+
+            // 3. Calculate final rotation (5 full spins + a half spin for tails)
+            const finalRotation = 1800 + (actualTossResult === 'Tails' ? 180 : 0);
+
+            // 4. Start listening and start the animation
+            // Use a tiny timeout to ensure the transform reset is applied before the transition starts
+            setTimeout(() => {
+                coin.style.transition = 'transform 3s ease-out';
+                coin.style.transform = `rotateY(${finalRotation}deg)`;
+                recognition.start();
+            }, 50);
+
+            // 5. Stop listening just before the coin lands
+            setTimeout(() => {
+                // Check if recognition is still running before trying to stop
+                try {
+                    recognition.stop();
+                } catch(e) {
+                    console.warn("Recognition could not be stopped, may have already finished.", e);
+                }
+            }, 2800); // Stop just before the 3s animation ends
+        });
+
+        if(recognition) {
+            recognition.onresult = (event) => {
+                const spokenText = event.results[0][0].transcript.toLowerCase();
+                let userChoice = null;
+
+                if (spokenText.includes('head')) {
+                    userChoice = 'Heads';
+                } else if (spokenText.includes('tail')) {
+                    userChoice = 'Tails';
+                }
+
+                tossStatus.textContent = `You called: "${userChoice || '...'}"`;
+
+                if (userChoice) {
+                    // Compare user's choice with the pre-determined result
+                    const winner = (userChoice === actualTossResult) ? match.team1 : match.team2;
+                    
+                    tossResultText.textContent = `It's ${actualTossResult}! ${winner.name} wins the toss.`;
+                    tossResultText.classList.remove('hidden');
+
+                    // Proceed to the next step after a delay for the user to read the result
+                    setTimeout(() => handleToss(winner), 2500);
+                } else {
+                    // Handle case where the call was not understood
+                    tossResultText.textContent = "Couldn't understand. The result was " + actualTossResult + ". Please toss again.";
+                    tossResultText.classList.remove('hidden');
+                    tossCoinBtn.disabled = false; // Allow user to try again
+                }
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Speech recognition error", event.error);
+                let errorMsg = "An error occurred. Please try again.";
+                if (event.error === 'no-speech' || event.error === 'audio-capture') {
+                    // The coin has already landed, so we can tell them the result
+                    errorMsg = `Didn't hear anything. The result was ${actualTossResult}. Please toss again.`;
+                } else if (event.error === 'not-allowed') {
+                    errorMsg = "Microphone access denied. Please allow and toss again.";
+                }
+                
+                tossStatus.textContent = errorMsg;
+                tossCoinBtn.disabled = false; // Re-enable button to allow retrying
+            };
+        }
+        
+        // The old processTossResult function is no longer needed.
 
         function handleToss(winner) {
             match.tossWinner = winner;
@@ -352,7 +522,7 @@
 
         function checkInningsEnd() {
             const currentInnings = match.innings === 1 ? match.innings1 : match.innings2;
-            let inningsOver = (currentInnings.wickets >= 1 || currentInnings.overs >= 2);
+            let inningsOver = (currentInnings.wickets >= 10 || currentInnings.overs >= 2); // Assuming 10 wickets max
 
             if (match.innings === 1 && inningsOver) {
                 switchInnings();
@@ -378,22 +548,27 @@
             let winner = null, loser = null, resultText;
 
             if (score2 >= match.target) {
-                winner = match.battingTeam; // Team chasing won
+                winner = match.battingTeam;
                 loser = match.bowlingTeam;
-            } else if (score1 > score2) {
-                winner = match.bowlingTeam; // Team defending won
+                const wicketsLeft = 10 - match.innings2.wickets;
+                resultText = `${winner.name} won by ${wicketsLeft} wicket${wicketsLeft !== 1 ? 's' : ''}.`;
+            } 
+            else if (score1 > score2) {
+                winner = match.bowlingTeam;
                 loser = match.battingTeam;
-            }
-
-            if (winner) {
-                resultText = `${winner.name} won the match!`;
-                winner.won++;
-                winner.points += 2;
-                loser.lost++;
-            } else {
+                const runMargin = score1 - score2;
+                resultText = `${winner.name} won by ${runMargin} run${runMargin !== 1 ? 's' : ''}.`;
+            } 
+            else {
                 resultText = "The match is a tie!";
                 match.team1.points++;
                 match.team2.points++;
+            }
+
+            if (winner) {
+                winner.won++;
+                winner.points += 2;
+                loser.lost++;
             }
 
             match.winner = winner;
@@ -417,9 +592,12 @@
 
         function updateTeamStats(team, battingInnings, bowlingInnings) {
             team.runsScored += battingInnings.score;
-            team.ballsFaced += battingInnings.overs * 6 + battingInnings.balls;
+            const ballsFacedInnings = battingInnings.overs * 6 + battingInnings.balls;
+            team.ballsFaced += ballsFacedInnings;
+            
             team.runsConceded += bowlingInnings.score;
-            team.ballsBowled += bowlingInnings.overs * 6 + bowlingInnings.balls;
+            const ballsBowledInnings = bowlingInnings.overs * 6 + bowlingInnings.balls;
+            team.ballsBowled += ballsBowledInnings;
         }
 
         function calculateNRR() {
